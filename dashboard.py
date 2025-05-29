@@ -13,7 +13,7 @@ st.set_page_config(
 )
 
 # Title
-st.title("🚗 Traffic Analysis Dashboard")
+st.title("🚗 Predicció de Trànsit - MARIA AP7")
 
 # Connect to database
 @st.cache_resource
