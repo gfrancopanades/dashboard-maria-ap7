@@ -30,7 +30,7 @@ st.sidebar.header("Filters")
 # Get unique dates for filter
 # Use only predictions table
 dates = con.execute("""
-    SELECT DISTINCT MAKE_DATE(Any, mes, dia) as date
+    SELECT DISTINCT MAKE_DATE("Any", "mes", "dia") as date
     FROM predictions
     ORDER BY date
 """).fetchdf()['date'].tolist()
