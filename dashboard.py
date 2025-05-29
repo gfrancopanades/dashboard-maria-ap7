@@ -51,6 +51,30 @@ selected_location = st.sidebar.selectbox(
     options=locations
 )
 
+# New time filters
+col1, col2, col3, col4 = st.sidebar.columns(4)
+with col1:
+    selected_year = st.selectbox(
+        "Year",
+        options=sorted(list(set(datetime.strptime(d, '%Y-%m-%d').year for d in dates)))
+    )
+with col2:
+    selected_month = st.selectbox(
+        "Month",
+        options=range(1, 13),
+        format_func=lambda x: datetime(2000, x, 1).strftime('%B')
+    )
+with col3:
+    selected_day = st.selectbox(
+        "Day",
+        options=range(1, 32)
+    )
+with col4:
+    selected_hour = st.selectbox(
+        "Hour",
+        options=range(24)
+    )
+
 # Main content
 # 1. Overview Metrics
 st.header("Overview Metrics")
@@ -72,6 +96,53 @@ with col2:
     st.metric("Average Intensity", f"{metrics['avg_intensity'][0]:.2f}")
 with col3:
     st.metric("Number of Records", f"{metrics['record_count'][0]:,}")
+
+# New section: PK vs Speed Analysis
+st.header("PK vs Speed Analysis")
+
+# Get data for PK vs Speed plot
+pk_speed_data = con.execute("""
+    SELECT 
+        pk,
+        mean_speed,
+        mean_speed_pred
+    FROM geo_cal_vel g
+    JOIN predictions p
+    ON g.dat = p.dat
+    AND g.via = p.via
+    AND g.pk = p.pk
+    AND g.sen = p.sen
+    WHERE EXTRACT(YEAR FROM g.dat) = ?
+    AND EXTRACT(MONTH FROM g.dat) = ?
+    AND EXTRACT(DAY FROM g.dat) = ?
+    AND g.hor = ?
+    AND g.via = ?
+    ORDER BY pk
+""", [selected_year, selected_month, selected_day, selected_hour, selected_location]).fetchdf()
+
+# Create PK vs Speed plot
+fig_pk_speed = go.Figure()
+fig_pk_speed.add_trace(go.Scatter(
+    x=pk_speed_data['pk'],
+    y=pk_speed_data['mean_speed'],
+    name='Actual Speed',
+    line=dict(color='blue')
+))
+fig_pk_speed.add_trace(go.Scatter(
+    x=pk_speed_data['pk'],
+    y=pk_speed_data['mean_speed_pred'],
+    name='Predicted Speed',
+    line=dict(color='red', dash='dash')
+))
+
+fig_pk_speed.update_layout(
+    title=f'Speed Distribution by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
+    xaxis_title='PK',
+    yaxis_title='Speed (km/h)',
+    hovermode='x unified'
+)
+
+st.plotly_chart(fig_pk_speed, use_container_width=True)
 
 # 2. Hourly Traffic Patterns
 st.header("Hourly Traffic Patterns")
