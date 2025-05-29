@@ -30,16 +30,23 @@ st.sidebar.header("Filters")
 # Get unique dates for filter
 # Use only predictions table
 dates = con.execute("""
-    SELECT DISTINCT dat 
-    FROM predictions 
-    ORDER BY dat
-""").fetchdf()['dat'].tolist()
+    SELECT DISTINCT MAKE_DATE(Any, mes, dia) as date
+    FROM predictions
+    ORDER BY date
+""").fetchdf()['date'].tolist()
 
 selected_date = st.sidebar.date_input(
     "Select Date",
-    value=dates[0].date(),
-    min_value=dates[0].date(),
-    max_value=dates[-1].date()
+    value=dates[0],
+    min_value=dates[0],
+    max_value=dates[-1]
+)
+selected_year = selected_date.year
+selected_month = selected_date.month
+selected_day = selected_date.day
+selected_hour = st.sidebar.selectbox(
+    "Hour",
+    options=range(24)
 )
 
 # Get unique locations for filter (from predictions table)
@@ -49,29 +56,10 @@ prediction_locations = con.execute("""
     ORDER BY via
 """).fetchdf()['via'].tolist()
 
-selected_prediction_location = st.sidebar.selectbox(
+selected_via = st.sidebar.selectbox(
     "Select Prediction Location (ID)",
     options=prediction_locations,
     key="prediction_location"
-)
-
-# Time filters (each on a separate line)
-selected_year = st.sidebar.selectbox(
-    "Year",
-    options=sorted(list(set(d.date().year for d in dates)))
-)
-selected_month = st.sidebar.selectbox(
-    "Month",
-    options=sorted(list(set(d.date().month for d in dates))),
-    format_func=lambda x: datetime(2000, x, 1).strftime('%B')
-)
-selected_day = st.sidebar.selectbox(
-    "Day",
-    options=sorted(list(set(d.date().day for d in dates)))
-)
-selected_hour = st.sidebar.selectbox(
-    "Hour",
-    options=range(24)
 )
 
 # Main content
@@ -85,13 +73,9 @@ pk_speed_data = con.execute("""
         pk,
         mean_speed_pred
     FROM predictions
-    WHERE EXTRACT(YEAR FROM dat) = ?
-            AND EXTRACT(MONTH FROM dat) = ?
-            AND EXTRACT(DAY FROM dat) = ?
-            AND hor = ?
-            AND via = ?
+    WHERE Any = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
-""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
+""", [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
 fig_pk_speed = go.Figure()
 fig_pk_speed.add_trace(go.Scatter(
@@ -115,13 +99,9 @@ pk_percentile10_data = con.execute("""
         pk,
         percentile_10_pred
     FROM predictions
-    WHERE EXTRACT(YEAR FROM dat) = ?
-            AND EXTRACT(MONTH FROM dat) = ?
-            AND EXTRACT(DAY FROM dat) = ?
-            AND hor = ?
-            AND via = ?
+    WHERE Any = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
-""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
+""", [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
 fig_pk_percentile10 = go.Figure()
 fig_pk_percentile10.add_trace(go.Scatter(
@@ -145,13 +125,9 @@ pk_inttot_data = con.execute("""
         pk,
         intTot_pred
     FROM predictions
-    WHERE EXTRACT(YEAR FROM dat) = ?
-            AND EXTRACT(MONTH FROM dat) = ?
-            AND EXTRACT(DAY FROM dat) = ?
-            AND hor = ?
-            AND via = ?
+    WHERE Any = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
-""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
+""", [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
 fig_pk_inttot = go.Figure()
 fig_pk_inttot.add_trace(go.Scatter(
@@ -175,13 +151,9 @@ pk_intp_data = con.execute("""
         pk,
         intP_pred
     FROM predictions
-    WHERE EXTRACT(YEAR FROM dat) = ?
-            AND EXTRACT(MONTH FROM dat) = ?
-            AND EXTRACT(DAY FROM dat) = ?
-            AND hor = ?
-            AND via = ?
+    WHERE Any = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
-""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
+""", [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
 fig_pk_intp = go.Figure()
 fig_pk_intp.add_trace(go.Scatter(
