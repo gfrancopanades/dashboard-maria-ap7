@@ -4,6 +4,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+from streamlit_folium import st_folium
+import folium
 
 # Page config
 st.set_page_config(
@@ -26,9 +28,10 @@ con = get_db_connection()
 st.sidebar.header("Filters")
 
 # Get unique dates for filter
+# Use only predictions table
 dates = con.execute("""
     SELECT DISTINCT dat 
-    FROM geo_cal_vel 
+    FROM predictions 
     ORDER BY dat
 """).fetchdf()['dat'].tolist()
 
@@ -59,12 +62,12 @@ selected_year = st.sidebar.selectbox(
 )
 selected_month = st.sidebar.selectbox(
     "Month",
-    options=range(1, 13),
+    options=sorted(list(set(d.date().month for d in dates))),
     format_func=lambda x: datetime(2000, x, 1).strftime('%B')
 )
 selected_day = st.sidebar.selectbox(
     "Day",
-    options=range(1, 32)
+    options=sorted(list(set(d.date().day for d in dates)))
 )
 selected_hour = st.sidebar.selectbox(
     "Hour",
@@ -78,22 +81,22 @@ st.header("Overview Metrics")
 # Get metrics for selected date and location
 metrics = con.execute("""
     SELECT 
-        AVG(mean_speed) as avg_speed,
-        AVG(intTot) as avg_intensity,
+        AVG(mean_speed_pred) as avg_speed_pred,
+        AVG(intTot_pred) as avg_intensity_pred,
         COUNT(*) as record_count
-    FROM geo_cal_vel
+    FROM predictions
     WHERE dat = ? AND via = ?
 """, [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    st.metric("Average Speed", f"{metrics['avg_speed'][0]:.2f} km/h")
+    st.metric("Average Predicted Speed", f"{metrics['avg_speed_pred'][0]:.2f} km/h")
 with col2:
-    st.metric("Average Intensity", f"{metrics['avg_intensity'][0]:.2f}")
+    st.metric("Average Predicted Intensity", f"{metrics['avg_intensity_pred'][0]:.2f}")
 with col3:
     st.metric("Number of Records", f"{metrics['record_count'][0]:,}")
 
-# New section: PK vs Speed Analysis
+# 2. PK vs Speed Analysis
 st.header("PK vs Speed Analysis")
 
 # Get data for PK vs Speed plot (from predictions table only)
@@ -103,10 +106,10 @@ pk_speed_data = con.execute("""
         mean_speed_pred
     FROM predictions
     WHERE EXTRACT(YEAR FROM dat) = ?
-    AND EXTRACT(MONTH FROM dat) = ?
-    AND EXTRACT(DAY FROM dat) = ?
-    AND hor = ?
-    AND via = ?
+            AND EXTRACT(MONTH FROM dat) = ?
+            AND EXTRACT(DAY FROM dat) = ?
+            AND hor = ?
+            AND via = ?
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
 
@@ -128,16 +131,16 @@ fig_pk_speed.update_layout(
 
 st.plotly_chart(fig_pk_speed, use_container_width=True)
 
-# 2. Hourly Traffic Patterns
+# 3. Hourly Traffic Patterns
 st.header("Hourly Traffic Patterns")
 
-# Get hourly data
+# Get hourly data (from predictions table only)
 hourly_data = con.execute("""
     SELECT 
         hor,
-        AVG(mean_speed) as avg_speed,
-        AVG(intTot) as avg_intensity
-    FROM geo_cal_vel
+        AVG(mean_speed_pred) as avg_speed_pred,
+        AVG(intTot_pred) as avg_intensity_pred
+    FROM predictions
     WHERE dat = ? AND via = ?
     GROUP BY hor
     ORDER BY hor
@@ -147,24 +150,24 @@ hourly_data = con.execute("""
 fig_hourly = go.Figure()
 fig_hourly.add_trace(go.Scatter(
     x=hourly_data['hor'],
-    y=hourly_data['avg_speed'],
-    name='Average Speed',
+    y=hourly_data['avg_speed_pred'],
+    name='Average Predicted Speed',
     line=dict(color='blue')
 ))
 fig_hourly.add_trace(go.Scatter(
     x=hourly_data['hor'],
-    y=hourly_data['avg_intensity'],
-    name='Average Intensity',
+    y=hourly_data['avg_intensity_pred'],
+    name='Average Predicted Intensity',
     line=dict(color='orange'),
     yaxis='y2'
 ))
 
 fig_hourly.update_layout(
-    title='Hourly Traffic Patterns',
+    title='Hourly Predicted Traffic Patterns',
     xaxis_title='Hour',
-    yaxis_title='Average Speed (km/h)',
+    yaxis_title='Average Predicted Speed (km/h)',
     yaxis2=dict(
-        title='Average Intensity',
+        title='Average Predicted Intensity',
         overlaying='y',
         side='right'
     ),
@@ -173,83 +176,14 @@ fig_hourly.update_layout(
 
 st.plotly_chart(fig_hourly, use_container_width=True)
 
-# 3. Prediction Analysis
-st.header("Prediction Analysis")
-
-# Get actual vs predicted data
-prediction_data = con.execute("""
-    SELECT 
-        g.hor,
-        g.mean_speed as actual_speed,
-        p.mean_speed_pred as predicted_speed,
-        g.intTot as actual_intensity,
-        p.intTot_pred as predicted_intensity
-    FROM geo_cal_vel g
-    JOIN predictions p
-    ON g.dat = p.dat
-    AND g.via = p.via
-    AND g.pk = p.pk
-    AND g.sen = p.sen
-    WHERE g.dat = ? AND g.via = ?
-    ORDER BY g.hor
-""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
-
-# Create prediction comparison plot
-fig_pred = go.Figure()
-fig_pred.add_trace(go.Scatter(
-    x=prediction_data['hor'],
-    y=prediction_data['actual_speed'],
-    name='Actual Speed',
-    line=dict(color='blue')
-))
-fig_pred.add_trace(go.Scatter(
-    x=prediction_data['hor'],
-    y=prediction_data['predicted_speed'],
-    name='Predicted Speed',
-    line=dict(color='red', dash='dash')
-))
-
-fig_pred.update_layout(
-    title='Speed: Actual vs Predicted',
-    xaxis_title='Hour',
-    yaxis_title='Speed (km/h)',
-    hovermode='x unified'
-)
-
-st.plotly_chart(fig_pred, use_container_width=True)
-
-# 4. Error Analysis
-st.header("Prediction Error Analysis")
-
-# Calculate errors
-prediction_data['speed_error'] = prediction_data['predicted_speed'] - prediction_data['actual_speed']
-prediction_data['intensity_error'] = prediction_data['predicted_intensity'] - prediction_data['actual_intensity']
-
-# Create error distribution plot
-fig_error = go.Figure()
-fig_error.add_trace(go.Histogram(
-    x=prediction_data['speed_error'],
-    name='Speed Error',
-    nbinsx=20
-))
-
-fig_error.update_layout(
-    title='Speed Prediction Error Distribution',
-    xaxis_title='Error (km/h)',
-    yaxis_title='Count',
-    showlegend=False
-)
-
-st.plotly_chart(fig_error, use_container_width=True)
-
-# 5. Data Quality
+# 4. Data Quality
 st.header("Data Quality")
 
-# Check for missing values
+# Check for missing values (from predictions table only)
 missing_values = con.execute("""
     SELECT column_name, COUNT(*) as null_count
     FROM (
-        SELECT * FROM geo_cal_vel
+        SELECT * FROM predictions
         WHERE dat = ? AND via = ?
     ) t
     UNPIVOT (value FOR column_name IN (*))
@@ -264,5 +198,10 @@ if not missing_values.empty:
 else:
     st.success("No missing values detected in the selected data.")
 
+# 5. Empty Leaflet Map
+st.header("Mapa (Leaflet)")
+m = folium.Map(location=[41.3851, 2.1734], zoom_start=6)
+st_folium(m, width=700, height=500)
+
 # Close database connection
-con.close() 
+con.close()
