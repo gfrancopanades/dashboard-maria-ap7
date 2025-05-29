@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 # Page config
 st.set_page_config(
-    page_title="Traffic Analysis Dashboard",
+    page_title="MARIA AP7",
     page_icon="🚗",
     layout="wide"
 )
@@ -39,16 +39,17 @@ selected_date = st.sidebar.date_input(
     max_value=dates[-1].date()
 )
 
-# Get unique locations for filter
-locations = con.execute("""
+# Get unique locations for filter (from predictions table)
+prediction_locations = con.execute("""
     SELECT DISTINCT via 
-    FROM geo_cal_vel 
+    FROM predictions 
     ORDER BY via
 """).fetchdf()['via'].tolist()
 
-selected_location = st.sidebar.selectbox(
-    "Select Location",
-    options=locations
+selected_prediction_location = st.sidebar.selectbox(
+    "Select Prediction Location (ID)",
+    options=prediction_locations,
+    key="prediction_location"
 )
 
 # Time filters (each on a separate line)
@@ -82,7 +83,7 @@ metrics = con.execute("""
         COUNT(*) as record_count
     FROM geo_cal_vel
     WHERE dat = ? AND via = ?
-""", [selected_date.strftime('%Y-%m-%d'), selected_location]).fetchdf()
+""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -107,7 +108,7 @@ pk_speed_data = con.execute("""
     AND hor = ?
     AND via = ?
     ORDER BY pk
-""", [selected_year, selected_month, selected_day, selected_hour, selected_location]).fetchdf()
+""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
 
 # Create PK vs Speed plot
 fig_pk_speed = go.Figure()
@@ -140,7 +141,7 @@ hourly_data = con.execute("""
     WHERE dat = ? AND via = ?
     GROUP BY hor
     ORDER BY hor
-""", [selected_date.strftime('%Y-%m-%d'), selected_location]).fetchdf()
+""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
 
 # Create hourly patterns plot
 fig_hourly = go.Figure()
@@ -191,7 +192,7 @@ prediction_data = con.execute("""
     AND g.sen = p.sen
     WHERE g.dat = ? AND g.via = ?
     ORDER BY g.hor
-""", [selected_date.strftime('%Y-%m-%d'), selected_location]).fetchdf()
+""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
 
 # Create prediction comparison plot
 fig_pred = go.Figure()
@@ -255,7 +256,7 @@ missing_values = con.execute("""
     WHERE value IS NULL
     GROUP BY column_name
     ORDER BY null_count DESC
-""", [selected_date.strftime('%Y-%m-%d'), selected_location]).fetchdf()
+""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
 
 if not missing_values.empty:
     st.warning("Missing values detected:")
