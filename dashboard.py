@@ -51,29 +51,24 @@ selected_location = st.sidebar.selectbox(
     options=locations
 )
 
-# New time filters
-col1, col2, col3, col4 = st.sidebar.columns(4)
-with col1:
-    selected_year = st.selectbox(
-        "Year",
-        options=sorted(list(set(d.date().year for d in dates)))
-    )
-with col2:
-    selected_month = st.selectbox(
-        "Month",
-        options=range(1, 13),
-        format_func=lambda x: datetime(2000, x, 1).strftime('%B')
-    )
-with col3:
-    selected_day = st.selectbox(
-        "Day",
-        options=range(1, 32)
-    )
-with col4:
-    selected_hour = st.selectbox(
-        "Hour",
-        options=range(24)
-    )
+# Time filters (each on a separate line)
+selected_year = st.sidebar.selectbox(
+    "Year",
+    options=sorted(list(set(d.date().year for d in dates)))
+)
+selected_month = st.sidebar.selectbox(
+    "Month",
+    options=range(1, 13),
+    format_func=lambda x: datetime(2000, x, 1).strftime('%B')
+)
+selected_day = st.sidebar.selectbox(
+    "Day",
+    options=range(1, 32)
+)
+selected_hour = st.sidebar.selectbox(
+    "Hour",
+    options=range(24)
+)
 
 # Main content
 # 1. Overview Metrics
