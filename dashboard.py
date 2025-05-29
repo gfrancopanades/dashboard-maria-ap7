@@ -75,29 +75,9 @@ selected_hour = st.sidebar.selectbox(
 )
 
 # Main content
-# 1. Overview Metrics
-st.header("Overview Metrics")
-
-# Get metrics for selected date and location
-metrics = con.execute("""
-    SELECT 
-        AVG(mean_speed_pred) as avg_speed_pred,
-        AVG(intTot_pred) as avg_intensity_pred,
-        COUNT(*) as record_count
-    FROM predictions
-    WHERE dat = ? AND via = ?
-""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
-
-col1, col2, col3 = st.columns(3)
-with col1:
-    st.metric("Average Predicted Speed", f"{metrics['avg_speed_pred'][0]:.2f} km/h")
-with col2:
-    st.metric("Average Predicted Intensity", f"{metrics['avg_intensity_pred'][0]:.2f}")
-with col3:
-    st.metric("Number of Records", f"{metrics['record_count'][0]:,}")
 
 # 2. PK vs Speed Analysis
-st.header("PK vs Speed Analysis")
+st.header("Predicció de velocitat mitjana per PK")
 
 # Predicted Speed by PK
 pk_speed_data = con.execute("""
@@ -129,7 +109,7 @@ fig_pk_speed.update_layout(
 st.plotly_chart(fig_pk_speed, use_container_width=True)
 
 # Percentile 10 Prediction by PK
-st.header("Percentile 10 Prediction by PK")
+st.header("Predicció del percentil 10 de velocitat per PK")
 pk_percentile10_data = con.execute("""
     SELECT 
         pk,
@@ -159,7 +139,7 @@ fig_pk_percentile10.update_layout(
 st.plotly_chart(fig_pk_percentile10, use_container_width=True)
 
 # Total Intensity Prediction by PK
-st.header("Total Intensity Prediction by PK")
+st.header("Predicció de la intensitat total per PK")
 pk_inttot_data = con.execute("""
     SELECT 
         pk,
@@ -189,7 +169,7 @@ fig_pk_inttot.update_layout(
 st.plotly_chart(fig_pk_inttot, use_container_width=True)
 
 # IntP Prediction by PK
-st.header("IntP Prediction by PK")
+st.header("Predicció de la intensitat de vehicles pesats per PK")
 pk_intp_data = con.execute("""
     SELECT 
         pk,
