@@ -95,34 +95,22 @@ with col3:
 # New section: PK vs Speed Analysis
 st.header("PK vs Speed Analysis")
 
-# Get data for PK vs Speed plot
+# Get data for PK vs Speed plot (from predictions table only)
 pk_speed_data = con.execute("""
     SELECT 
         pk,
-        mean_speed,
         mean_speed_pred
-    FROM geo_cal_vel g
-    JOIN predictions p
-    ON g.dat = p.dat
-    AND g.via = p.via
-    AND g.pk = p.pk
-    AND g.sen = p.sen
-    WHERE EXTRACT(YEAR FROM g.dat) = ?
-    AND EXTRACT(MONTH FROM g.dat) = ?
-    AND EXTRACT(DAY FROM g.dat) = ?
-    AND g.hor = ?
-    AND g.via = ?
+    FROM predictions
+    WHERE EXTRACT(YEAR FROM dat) = ?
+    AND EXTRACT(MONTH FROM dat) = ?
+    AND EXTRACT(DAY FROM dat) = ?
+    AND hor = ?
+    AND via = ?
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_location]).fetchdf()
 
 # Create PK vs Speed plot
 fig_pk_speed = go.Figure()
-fig_pk_speed.add_trace(go.Scatter(
-    x=pk_speed_data['pk'],
-    y=pk_speed_data['mean_speed'],
-    name='Actual Speed',
-    line=dict(color='blue')
-))
 fig_pk_speed.add_trace(go.Scatter(
     x=pk_speed_data['pk'],
     y=pk_speed_data['mean_speed_pred'],
@@ -131,9 +119,9 @@ fig_pk_speed.add_trace(go.Scatter(
 ))
 
 fig_pk_speed.update_layout(
-    title=f'Speed Distribution by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
+    title=f'Predicted Speed by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
     xaxis_title='PK',
-    yaxis_title='Speed (km/h)',
+    yaxis_title='Predicted Speed (km/h)',
     hovermode='x unified'
 )
 
