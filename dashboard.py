@@ -99,7 +99,7 @@ with col3:
 # 2. PK vs Speed Analysis
 st.header("PK vs Speed Analysis")
 
-# Get data for PK vs Speed plot (from predictions table only)
+# Predicted Speed by PK
 pk_speed_data = con.execute("""
     SELECT 
         pk,
@@ -113,7 +113,6 @@ pk_speed_data = con.execute("""
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
 
-# Create PK vs Speed plot
 fig_pk_speed = go.Figure()
 fig_pk_speed.add_trace(go.Scatter(
     x=pk_speed_data['pk'],
@@ -121,82 +120,103 @@ fig_pk_speed.add_trace(go.Scatter(
     name='Predicted Speed',
     line=dict(color='red', dash='dash')
 ))
-
 fig_pk_speed.update_layout(
     title=f'Predicted Speed by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
     xaxis_title='PK',
     yaxis_title='Predicted Speed (km/h)',
     hovermode='x unified'
 )
-
 st.plotly_chart(fig_pk_speed, use_container_width=True)
 
-# 3. Hourly Traffic Patterns
-st.header("Hourly Traffic Patterns")
-
-# Get hourly data (from predictions table only)
-hourly_data = con.execute("""
+# Percentile 10 Prediction by PK
+st.header("Percentile 10 Prediction by PK")
+pk_percentile10_data = con.execute("""
     SELECT 
-        hor,
-        AVG(mean_speed_pred) as avg_speed_pred,
-        AVG(intTot_pred) as avg_intensity_pred
+        pk,
+        percentile_10_pred
     FROM predictions
-    WHERE dat = ? AND via = ?
-    GROUP BY hor
-    ORDER BY hor
-""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
+    WHERE EXTRACT(YEAR FROM dat) = ?
+            AND EXTRACT(MONTH FROM dat) = ?
+            AND EXTRACT(DAY FROM dat) = ?
+            AND hor = ?
+            AND via = ?
+    ORDER BY pk
+""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
 
-# Create hourly patterns plot
-fig_hourly = go.Figure()
-fig_hourly.add_trace(go.Scatter(
-    x=hourly_data['hor'],
-    y=hourly_data['avg_speed_pred'],
-    name='Average Predicted Speed',
-    line=dict(color='blue')
+fig_pk_percentile10 = go.Figure()
+fig_pk_percentile10.add_trace(go.Scatter(
+    x=pk_percentile10_data['pk'],
+    y=pk_percentile10_data['percentile_10_pred'],
+    name='Percentile 10 Predicted',
+    line=dict(color='green', dash='dot')
 ))
-fig_hourly.add_trace(go.Scatter(
-    x=hourly_data['hor'],
-    y=hourly_data['avg_intensity_pred'],
-    name='Average Predicted Intensity',
-    line=dict(color='orange'),
-    yaxis='y2'
-))
-
-fig_hourly.update_layout(
-    title='Hourly Predicted Traffic Patterns',
-    xaxis_title='Hour',
-    yaxis_title='Average Predicted Speed (km/h)',
-    yaxis2=dict(
-        title='Average Predicted Intensity',
-        overlaying='y',
-        side='right'
-    ),
+fig_pk_percentile10.update_layout(
+    title=f'Percentile 10 Predicted by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
+    xaxis_title='PK',
+    yaxis_title='Percentile 10 Predicted',
     hovermode='x unified'
 )
+st.plotly_chart(fig_pk_percentile10, use_container_width=True)
 
-st.plotly_chart(fig_hourly, use_container_width=True)
+# Total Intensity Prediction by PK
+st.header("Total Intensity Prediction by PK")
+pk_inttot_data = con.execute("""
+    SELECT 
+        pk,
+        intTot_pred
+    FROM predictions
+    WHERE EXTRACT(YEAR FROM dat) = ?
+            AND EXTRACT(MONTH FROM dat) = ?
+            AND EXTRACT(DAY FROM dat) = ?
+            AND hor = ?
+            AND via = ?
+    ORDER BY pk
+""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
 
-# 4. Data Quality
-st.header("Data Quality")
+fig_pk_inttot = go.Figure()
+fig_pk_inttot.add_trace(go.Scatter(
+    x=pk_inttot_data['pk'],
+    y=pk_inttot_data['intTot_pred'],
+    name='Total Intensity Predicted',
+    line=dict(color='orange', dash='solid')
+))
+fig_pk_inttot.update_layout(
+    title=f'Total Intensity Predicted by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
+    xaxis_title='PK',
+    yaxis_title='Total Intensity Predicted',
+    hovermode='x unified'
+)
+st.plotly_chart(fig_pk_inttot, use_container_width=True)
 
-# Check for missing values (from predictions table only)
-missing_values = con.execute("""
-    SELECT column_name, COUNT(*) as null_count
-    FROM (
-        SELECT * FROM predictions
-        WHERE dat = ? AND via = ?
-    ) t
-    UNPIVOT (value FOR column_name IN (*))
-    WHERE value IS NULL
-    GROUP BY column_name
-    ORDER BY null_count DESC
-""", [selected_date.strftime('%Y-%m-%d'), selected_prediction_location]).fetchdf()
+# IntP Prediction by PK
+st.header("IntP Prediction by PK")
+pk_intp_data = con.execute("""
+    SELECT 
+        pk,
+        intP_pred
+    FROM predictions
+    WHERE EXTRACT(YEAR FROM dat) = ?
+            AND EXTRACT(MONTH FROM dat) = ?
+            AND EXTRACT(DAY FROM dat) = ?
+            AND hor = ?
+            AND via = ?
+    ORDER BY pk
+""", [selected_year, selected_month, selected_day, selected_hour, selected_prediction_location]).fetchdf()
 
-if not missing_values.empty:
-    st.warning("Missing values detected:")
-    st.dataframe(missing_values)
-else:
-    st.success("No missing values detected in the selected data.")
+fig_pk_intp = go.Figure()
+fig_pk_intp.add_trace(go.Scatter(
+    x=pk_intp_data['pk'],
+    y=pk_intp_data['intP_pred'],
+    name='IntP Predicted',
+    line=dict(color='purple', dash='dash')
+))
+fig_pk_intp.update_layout(
+    title=f'IntP Predicted by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
+    xaxis_title='PK',
+    yaxis_title='IntP Predicted',
+    hovermode='x unified'
+)
+st.plotly_chart(fig_pk_intp, use_container_width=True)
 
 # 5. Empty Leaflet Map
 st.header("Mapa (Leaflet)")
