@@ -34,9 +34,9 @@ dates = con.execute("""
 
 selected_date = st.sidebar.date_input(
     "Select Date",
-    value=datetime.strptime(dates[0], '%Y-%m-%d').date(),
-    min_value=datetime.strptime(dates[0], '%Y-%m-%d').date(),
-    max_value=datetime.strptime(dates[-1], '%Y-%m-%d').date()
+    value=dates[0].date(),
+    min_value=dates[0].date(),
+    max_value=dates[-1].date()
 )
 
 # Get unique locations for filter
@@ -56,7 +56,7 @@ col1, col2, col3, col4 = st.sidebar.columns(4)
 with col1:
     selected_year = st.selectbox(
         "Year",
-        options=sorted(list(set(datetime.strptime(d, '%Y-%m-%d').year for d in dates)))
+        options=sorted(list(set(d.date().year for d in dates)))
     )
 with col2:
     selected_month = st.selectbox(
