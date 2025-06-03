@@ -18,189 +18,97 @@ st.set_page_config(
 # Title
 st.title("🚗 Predicció de Trànsit - MARIA AP7")
 
-# Database connection management
-@st.cache_resource
-def init_connection():
-    db_path = 'maria_ap7.duckdb'
-    return duckdb.connect(db_path)
+# Start with basic debugging
+st.write("✅ App started successfully")
 
-# Initialize connection
-if 'db_connection' not in st.session_state:
-    st.session_state.db_connection = init_connection()
-
-# Use the connection from session state
-con = st.session_state.db_connection
-
-# Debug info (move these outside the cached function)
+# Check database file
 db_path = 'maria_ap7.duckdb'
 st.write(f"Database path: {os.path.abspath(db_path)}")
 st.write(f"Database exists: {os.path.exists(db_path)}")
+
+if not os.path.exists(db_path):
+    st.error(f"❌ Database file not found at: {os.path.abspath(db_path)}")
+    st.write("Please make sure the database file exists in the correct location.")
+    st.stop()
+
+st.write("✅ Database file found")
+
+# Try to connect to database
 try:
-    tables = con.execute("SHOW TABLES").fetchall()
-    st.write("Available tables:", tables)
+    con = duckdb.connect(db_path)
+    st.write("✅ Connected to database")
 except Exception as e:
-    st.write(f"Error listing tables: {e}")
+    st.error(f"❌ Failed to connect to database: {str(e)}")
+    st.stop()
 
-# Sidebar filters
-st.sidebar.header("Filters")
-
-# Get unique dates for filter
-# Use only predictions table
+# Try to list tables
 try:
-    # First verify the table exists
     tables = con.execute("SHOW TABLES").fetchall()
-    st.write("Current tables in database:", tables)
+    st.write("✅ Successfully listed tables")
+    st.write("Available tables:", tables)
     
+    if not tables:
+        st.error("❌ No tables found in database")
+        st.stop()
+        
+except Exception as e:
+    st.error(f"❌ Failed to list tables: {str(e)}")
+    st.stop()
+
+# Check if predictions table exists
+table_names = [table[0] for table in tables]
+if 'predictions' not in table_names:
+    st.error(f"❌ 'predictions' table not found. Available tables: {table_names}")
+    st.stop()
+
+st.write("✅ 'predictions' table found")
+
+# Try a simple query on predictions table
+try:
+    result = con.execute("SELECT COUNT(*) FROM predictions").fetchall()
+    row_count = result[0][0]
+    st.write(f"✅ Predictions table has {row_count} rows")
+except Exception as e:
+    st.error(f"❌ Failed to query predictions table: {str(e)}")
+    st.stop()
+
+# Try to get column information
+try:
+    columns = con.execute("DESCRIBE predictions").fetchdf()
+    st.write("✅ Successfully described predictions table")
+    st.write("Columns in predictions table:")
+    st.dataframe(columns)
+except Exception as e:
+    st.error(f"❌ Failed to describe predictions table: {str(e)}")
+    st.stop()
+
+# Try the date query
+try:
     dates = con.execute("""
         SELECT DISTINCT MAKE_DATE(Anyo, mes, dia) as date
         FROM predictions
         ORDER BY date   
-    """).fetchdf()['date'].tolist()
-
-    selected_date = st.sidebar.date_input(
-        "Select Date",
-        value=dates[0],
-        min_value=dates[0],
-        max_value=dates[-1]
-    )
-    selected_year = selected_date.year
-    selected_month = selected_date.month
-    selected_day = selected_date.day
-    selected_hour = st.sidebar.selectbox(
-        "Hour",
-        options=range(24)
-    )
-
-    # Get unique locations for filter (from predictions table)
-    prediction_locations = con.execute("""
-        SELECT DISTINCT via 
-        FROM predictions 
-        ORDER BY via
-    """).fetchdf()['via'].tolist()
-
-    selected_via = st.sidebar.selectbox(
-        "Select Prediction Location (ID)",
-        options=prediction_locations,
-        key="prediction_location"
-    )
-
-    # Main content
-
-    # 2. PK vs Speed Analysis
-    st.header("Predicció de velocitat mitjana per PK")
-
-    # Predicted Speed by PK
-    pk_speed_data = con.execute("""
-        SELECT 
-            pk,
-            mean_speed_pred
-        FROM predictions
-        WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
-        ORDER BY pk
-    """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
-
-    fig_pk_speed = go.Figure()
-    fig_pk_speed.add_trace(go.Scatter(
-        x=pk_speed_data['pk'],
-        y=pk_speed_data['mean_speed_pred'],
-        name='Predicted Speed',
-        line=dict(color='red', dash='dash')
-    ))
-    fig_pk_speed.update_layout(
-        title=f'Predicted Speed by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
-        xaxis_title='PK',
-        yaxis_title='Predicted Speed (km/h)',
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig_pk_speed, use_container_width=True)
-
-    # Percentile 10 Prediction by PK
-    st.header("Predicció del percentil 10 de velocitat per PK")
-    pk_percentile10_data = con.execute("""
-        SELECT 
-            pk,
-            percentile_10_pred
-        FROM predictions
-        WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
-        ORDER BY pk
-    """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
-
-    fig_pk_percentile10 = go.Figure()
-    fig_pk_percentile10.add_trace(go.Scatter(
-        x=pk_percentile10_data['pk'],
-        y=pk_percentile10_data['percentile_10_pred'],
-        name='Percentile 10 Predicted',
-        line=dict(color='green', dash='dot')
-    ))
-    fig_pk_percentile10.update_layout(
-        title=f'Percentile 10 Predicted by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
-        xaxis_title='PK',
-        yaxis_title='Percentile 10 Predicted',
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig_pk_percentile10, use_container_width=True)
-
-    # Total Intensity Prediction by PK
-    st.header("Predicció de la intensitat total per PK")
-    pk_inttot_data = con.execute("""
-        SELECT 
-            pk,
-            intTot_pred
-        FROM predictions
-        WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
-        ORDER BY pk
-    """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
-
-    fig_pk_inttot = go.Figure()
-    fig_pk_inttot.add_trace(go.Scatter(
-        x=pk_inttot_data['pk'],
-        y=pk_inttot_data['intTot_pred'],
-        name='Total Intensity Predicted',
-        line=dict(color='orange', dash='solid')
-    ))
-    fig_pk_inttot.update_layout(
-        title=f'Total Intensity Predicted by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
-        xaxis_title='PK',
-        yaxis_title='Total Intensity Predicted',
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig_pk_inttot, use_container_width=True)
-
-    # IntP Prediction by PK
-    st.header("Predicció de la intensitat de vehicles pesats per PK")
-    pk_intp_data = con.execute("""
-        SELECT 
-            pk,
-            intP_pred
-        FROM predictions
-        WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
-        ORDER BY pk
-    """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
-
-    fig_pk_intp = go.Figure()
-    fig_pk_intp.add_trace(go.Scatter(
-        x=pk_intp_data['pk'],
-        y=pk_intp_data['intP_pred'],
-        name='IntP Predicted',
-        line=dict(color='purple', dash='dash')
-    ))
-    fig_pk_intp.update_layout(
-        title=f'IntP Predicted by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour})',
-        xaxis_title='PK',
-        yaxis_title='IntP Predicted',
-        hovermode='x unified'
-    )
-    st.plotly_chart(fig_pk_intp, use_container_width=True)
-
-    # 5. Empty Leaflet Map
-    st.header("Mapa (Leaflet)")
-    m = folium.Map(location=[41.3851, 2.1734], zoom_start=6)
-    st_folium(m, width=700, height=500)
-
+        LIMIT 5
+    """).fetchdf()
+    st.write("✅ Successfully executed date query")
+    st.write("Sample dates:", dates)
 except Exception as e:
-    st.error(f"An error occurred: {str(e)}")
-    # If there's an error, try to reinitialize the connection
-    if 'db_connection' in st.session_state:
-        del st.session_state.db_connection
-    st.session_state.db_connection = init_connection()
-    st.rerun()
+    st.error(f"❌ Failed to execute date query: {str(e)}")
+    st.write("This might be due to:")
+    st.write("- Missing columns (Anyo, mes, dia)")
+    st.write("- Data type issues")
+    st.write("- NULL values in date columns")
+    st.stop()
+
+st.write("✅ All basic checks passed!")
+
+# Simple sidebar
+st.sidebar.header("Basic Filters")
+st.sidebar.write("Database connection successful!")
+
+# Simple main content
+st.header("Database Status")
+st.success("All database checks passed successfully!")
+
+# Close connection
+con.close()
