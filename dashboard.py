@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from streamlit_folium import st_folium
 import folium
+import os
 
 # Page config
 st.set_page_config(
@@ -20,7 +21,17 @@ st.title("🚗 Predicció de Trànsit - MARIA AP7")
 # Database connection management
 @st.cache_resource
 def init_connection():
-    return duckdb.connect('maria_ap7.duckdb')
+    db_path = 'maria_ap7.duckdb'
+    # Debug information
+    st.write(f"Database path: {os.path.abspath(db_path)}")
+    st.write(f"Database exists: {os.path.exists(db_path)}")
+    
+    # List tables in the database
+    con = duckdb.connect(db_path)
+    tables = con.execute("SHOW TABLES").fetchall()
+    st.write("Available tables:", tables)
+    
+    return con
 
 # Initialize connection
 if 'db_connection' not in st.session_state:
@@ -35,6 +46,10 @@ st.sidebar.header("Filters")
 # Get unique dates for filter
 # Use only predictions table
 try:
+    # First verify the table exists
+    tables = con.execute("SHOW TABLES").fetchall()
+    st.write("Current tables in database:", tables)
+    
     dates = con.execute("""
         SELECT DISTINCT MAKE_DATE(Anyo, mes, dia) as date
         FROM predictions
@@ -187,4 +202,4 @@ except Exception as e:
     if 'db_connection' in st.session_state:
         del st.session_state.db_connection
     st.session_state.db_connection = init_connection()
-    st.experimental_rerun()
+    st.rerun()
