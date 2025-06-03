@@ -30,7 +30,7 @@ st.sidebar.header("Filters")
 # Get unique dates for filter
 # Use only predictions table
 dates = con.execute("""
-    SELECT DISTINCT MAKE_DATE("Any", "mes", "dia") as date
+    SELECT DISTINCT MAKE_DATE(Anyo, mes, dia) as date
     FROM predictions
     ORDER BY date   
 """).fetchdf()['date'].tolist()
@@ -73,7 +73,7 @@ pk_speed_data = con.execute("""
         pk,
         mean_speed_pred
     FROM predictions
-    WHERE "any" = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
+    WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
@@ -99,7 +99,7 @@ pk_percentile10_data = con.execute("""
         pk,
         percentile_10_pred
     FROM predictions
-    WHERE "any" = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
+    WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
@@ -125,7 +125,7 @@ pk_inttot_data = con.execute("""
         pk,
         intTot_pred
     FROM predictions
-    WHERE "any" = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
+    WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
@@ -151,7 +151,7 @@ pk_intp_data = con.execute("""
         pk,
         intP_pred
     FROM predictions
-    WHERE "any" = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
+    WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
     ORDER BY pk
 """, [selected_year, selected_month, selected_day, selected_hour, selected_via]).fetchdf()
 
