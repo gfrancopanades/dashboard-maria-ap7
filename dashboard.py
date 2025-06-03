@@ -22,16 +22,7 @@ st.title("🚗 Predicció de Trànsit - MARIA AP7")
 @st.cache_resource
 def init_connection():
     db_path = 'maria_ap7.duckdb'
-    # Debug information
-    st.write(f"Database path: {os.path.abspath(db_path)}")
-    st.write(f"Database exists: {os.path.exists(db_path)}")
-    
-    # List tables in the database
-    con = duckdb.connect(db_path)
-    tables = con.execute("SHOW TABLES").fetchall()
-    st.write("Available tables:", tables)
-    
-    return con
+    return duckdb.connect(db_path)
 
 # Initialize connection
 if 'db_connection' not in st.session_state:
@@ -39,6 +30,16 @@ if 'db_connection' not in st.session_state:
 
 # Use the connection from session state
 con = st.session_state.db_connection
+
+# Debug info (move these outside the cached function)
+db_path = 'maria_ap7.duckdb'
+st.write(f"Database path: {os.path.abspath(db_path)}")
+st.write(f"Database exists: {os.path.exists(db_path)}")
+try:
+    tables = con.execute("SHOW TABLES").fetchall()
+    st.write("Available tables:", tables)
+except Exception as e:
+    st.write(f"Error listing tables: {e}")
 
 # Sidebar filters
 st.sidebar.header("Filters")
