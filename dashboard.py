@@ -22,6 +22,7 @@ st.title("🚗 Predicció de Trànsit - MARIA AP7")
 def get_db_connection():
     return duckdb.connect('maria_ap7.duckdb')
 
+# Get database connection
 con = get_db_connection()
 
 # Sidebar filters
@@ -174,6 +175,3 @@ st.plotly_chart(fig_pk_intp, use_container_width=True)
 st.header("Mapa (Leaflet)")
 m = folium.Map(location=[41.3851, 2.1734], zoom_start=6)
 st_folium(m, width=700, height=500)
-
-# Close database connection
-con.close()
