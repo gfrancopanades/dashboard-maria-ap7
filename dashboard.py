@@ -88,7 +88,9 @@ if os.path.exists(db_path):
         query = """
         SELECT 
             pk,
-            intP_pred
+            intP_pred,
+            intTot_pred,
+            mean_speed_pred
         FROM predictions
         WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
         ORDER BY pk
@@ -103,14 +105,16 @@ if os.path.exists(db_path):
             print(f"🐛 DEBUG: Data shape: {filtered_data.shape}")
             print(f"🐛 DEBUG: PK range: {filtered_data['pk'].min()} to {filtered_data['pk'].max()}")
             print(f"🐛 DEBUG: HWV Intensity range: {filtered_data['intP_pred'].min()} to {filtered_data['intP_pred'].max()}")
+            print(f"🐛 DEBUG: Total Intensity range: {filtered_data['intTot_pred'].min()} to {filtered_data['intTot_pred'].max()}")
+            print(f"🐛 DEBUG: Mean Speed range: {filtered_data['mean_speed_pred'].min()} to {filtered_data['mean_speed_pred'].max()}")
         
         if len(filtered_data) > 0:
             # HWV Intensity Prediction by PK plot
             st.header("HWV Intensity Prediction by PK")
             print("🐛 DEBUG: Creating HWV Intensity plot")
             
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
+            fig1 = go.Figure()
+            fig1.add_trace(go.Scatter(
                 x=filtered_data['pk'],
                 y=filtered_data['intP_pred'],
                 mode='lines+markers',
@@ -119,7 +123,7 @@ if os.path.exists(db_path):
                 marker=dict(size=4)
             ))
             
-            fig.update_layout(
+            fig1.update_layout(
                 title=f'HWV Intensity Prediction by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour}, Via: {selected_via})',
                 xaxis_title='PK (Punto Kilométrico)',
                 yaxis_title='HWV Intensity Predicted (Heavy Vehicle Intensity)',
@@ -127,9 +131,61 @@ if os.path.exists(db_path):
                 height=500
             )
             
-            print("🐛 DEBUG: Displaying plot")
-            st.plotly_chart(fig, use_container_width=True)
-            print("🐛 DEBUG: Plot displayed successfully")
+            print("🐛 DEBUG: Displaying HWV Intensity plot")
+            st.plotly_chart(fig1, use_container_width=True)
+            print("🐛 DEBUG: HWV Intensity plot displayed successfully")
+            
+            # Total Intensity Prediction by PK plot
+            st.header("Total Intensity Prediction by PK")
+            print("🐛 DEBUG: Creating Total Intensity plot")
+            
+            fig2 = go.Figure()
+            fig2.add_trace(go.Scatter(
+                x=filtered_data['pk'],
+                y=filtered_data['intTot_pred'],
+                mode='lines+markers',
+                name='Total Intensity Predicted',
+                line=dict(color='orange', width=2),
+                marker=dict(size=4)
+            ))
+            
+            fig2.update_layout(
+                title=f'Total Intensity Prediction by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour}, Via: {selected_via})',
+                xaxis_title='PK (Punto Kilométrico)',
+                yaxis_title='Total Intensity Predicted (Total Vehicle Intensity)',
+                hovermode='x unified',
+                height=500
+            )
+            
+            print("🐛 DEBUG: Displaying Total Intensity plot")
+            st.plotly_chart(fig2, use_container_width=True)
+            print("🐛 DEBUG: Total Intensity plot displayed successfully")
+            
+            # Mean Speed Prediction by PK plot
+            st.header("Mean Speed Prediction by PK")
+            print("🐛 DEBUG: Creating Mean Speed plot")
+            
+            fig3 = go.Figure()
+            fig3.add_trace(go.Scatter(
+                x=filtered_data['pk'],
+                y=filtered_data['mean_speed_pred'],
+                mode='lines+markers',
+                name='Mean Speed Predicted',
+                line=dict(color='blue', width=2),
+                marker=dict(size=4)
+            ))
+            
+            fig3.update_layout(
+                title=f'Mean Speed Prediction by PK (Year: {selected_year}, Month: {selected_month}, Day: {selected_day}, Hour: {selected_hour}, Via: {selected_via})',
+                xaxis_title='PK (Punto Kilométrico)',
+                yaxis_title='Mean Speed Predicted (km/h)',
+                hovermode='x unified',
+                height=500
+            )
+            
+            print("🐛 DEBUG: Displaying Mean Speed plot")
+            st.plotly_chart(fig3, use_container_width=True)
+            print("🐛 DEBUG: Mean Speed plot displayed successfully")
                 
         else:
             print("🐛 DEBUG: No data found for selected filters")
