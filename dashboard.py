@@ -26,7 +26,7 @@ if os.path.exists(db_path):
         con = duckdb.connect(db_path)
         print("🐛 DEBUG: Database connection successful")
         
-        # Get unique values for filters
+        # Get unique values for filters from predictions table
         print("🐛 DEBUG: Querying unique values for filters...")
         
         unique_years = con.execute("SELECT DISTINCT Anyo FROM predictions ORDER BY Anyo").fetchdf()['Anyo'].tolist()
@@ -83,17 +83,27 @@ if os.path.exists(db_path):
         )
         print(f"🐛 DEBUG: Selected via: {selected_via}")
         
-        # Query filtered data
-        print("🐛 DEBUG: Preparing query with selected filters")
+        # Query filtered data with real values joined
+        print("🐛 DEBUG: Preparing query with selected filters and joining real values")
         query = """
         SELECT 
-            pk,
-            intP_pred,
-            intTot_pred,
-            mean_speed_pred
-        FROM predictions
-        WHERE Anyo = ? AND mes = ? AND dia = ? AND hor = ? AND via = ?
-        ORDER BY pk
+            p.pk,
+            p.intP_pred,
+            p.intTot_pred,
+            p.mean_speed_pred,
+            g.intP as intP_real,
+            g.intTot as intTot_real,
+            g.mean_speed as mean_speed_real
+        FROM predictions p
+        LEFT JOIN geo_cal_vel g ON 
+            p.pk = g.pk AND 
+            p.Anyo = g.Any AND 
+            p.mes = g.mes AND 
+            p.dia = g.dia AND 
+            p.hor = g.hor AND
+            g.via = 'AP-7'
+        WHERE p.Anyo = ? AND p.mes = ? AND p.dia = ? AND p.hor = ? AND p.via = ?
+        ORDER BY p.pk
         """
         
         print(f"🐛 DEBUG: Executing query with parameters: [{selected_year}, {selected_month}, {selected_day}, {selected_hour}, {selected_via}]")
@@ -104,31 +114,47 @@ if os.path.exists(db_path):
         if len(filtered_data) > 0:
             print(f"🐛 DEBUG: Data shape: {filtered_data.shape}")
             print(f"🐛 DEBUG: PK range: {filtered_data['pk'].min()} to {filtered_data['pk'].max()}")
-            print(f"🐛 DEBUG: HWV Intensity range: {filtered_data['intP_pred'].min()} to {filtered_data['intP_pred'].max()}")
-            print(f"🐛 DEBUG: Total Intensity range: {filtered_data['intTot_pred'].min()} to {filtered_data['intTot_pred'].max()}")
-            print(f"🐛 DEBUG: Mean Speed range: {filtered_data['mean_speed_pred'].min()} to {filtered_data['mean_speed_pred'].max()}")
+            print(f"🐛 DEBUG: HWV Intensity pred range: {filtered_data['intP_pred'].min()} to {filtered_data['intP_pred'].max()}")
+            print(f"🐛 DEBUG: HWV Intensity real range: {filtered_data['intP_real'].min()} to {filtered_data['intP_real'].max()}")
+            print(f"🐛 DEBUG: Real data availability: {filtered_data['intP_real'].notna().sum()} of {len(filtered_data)} records")
         
         if len(filtered_data) > 0:
             # HWV Intensity Prediction by PK plot
             st.header("Predicció Intensitat de Vehicles Pesats per PK")
-            print("🐛 DEBUG: Creating HWV Intensity plot")
+            print("🐛 DEBUG: Creating HWV Intensity plot with real vs predicted values")
             
             fig1 = go.Figure()
+            
+            # Add predicted values
             fig1.add_trace(go.Scatter(
                 x=filtered_data['pk'],
                 y=filtered_data['intP_pred'],
                 mode='lines+markers',
                 name='Intensitat Vehicles Pesats Predita',
-                line=dict(color='purple', width=2),
-                marker=dict(size=4)
+                line=dict(color='purple', width=3),
+                marker=dict(size=6)
             ))
+            
+            # Add real values if available
+            real_data = filtered_data[filtered_data['intP_real'].notna()]
+            if len(real_data) > 0:
+                fig1.add_trace(go.Scatter(
+                    x=real_data['pk'],
+                    y=real_data['intP_real'],
+                    mode='lines+markers',
+                    name='Intensitat Vehicles Pesats Real',
+                    line=dict(color='mediumpurple', width=2, dash='dot'),
+                    marker=dict(size=4),
+                    opacity=0.7
+                ))
             
             fig1.update_layout(
                 title=f'Predicció Intensitat de Vehicles Pesats per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
                 xaxis_title='PK (Punt Quilomètric)',
-                yaxis_title='Intensitat de Vehicles Pesats Predita',
+                yaxis_title='Intensitat de Vehicles Pesats',
                 hovermode='x unified',
-                height=500
+                height=500,
+                legend=dict(x=0.02, y=0.98)
             )
             
             print("🐛 DEBUG: Displaying HWV Intensity plot")
@@ -137,24 +163,39 @@ if os.path.exists(db_path):
             
             # Total Intensity Prediction by PK plot
             st.header("Predicció Intensitat Total per PK")
-            print("🐛 DEBUG: Creating Total Intensity plot")
+            print("🐛 DEBUG: Creating Total Intensity plot with real vs predicted values")
             
             fig2 = go.Figure()
+            
+            # Add predicted values
             fig2.add_trace(go.Scatter(
                 x=filtered_data['pk'],
                 y=filtered_data['intTot_pred'],
                 mode='lines+markers',
                 name='Intensitat Total Predita',
-                line=dict(color='orange', width=2),
-                marker=dict(size=4)
+                line=dict(color='orange', width=3),
+                marker=dict(size=6)
             ))
+            
+            # Add real values if available
+            if len(real_data) > 0:
+                fig2.add_trace(go.Scatter(
+                    x=real_data['pk'],
+                    y=real_data['intTot_real'],
+                    mode='lines+markers',
+                    name='Intensitat Total Real',
+                    line=dict(color='moccasin', width=2, dash='dot'),
+                    marker=dict(size=4),
+                    opacity=0.7
+                ))
             
             fig2.update_layout(
                 title=f'Predicció Intensitat Total per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
                 xaxis_title='PK (Punt Quilomètric)',
-                yaxis_title='Intensitat Total Predita',
+                yaxis_title='Intensitat Total',
                 hovermode='x unified',
-                height=500
+                height=500,
+                legend=dict(x=0.02, y=0.98)
             )
             
             print("🐛 DEBUG: Displaying Total Intensity plot")
@@ -163,33 +204,50 @@ if os.path.exists(db_path):
             
             # Mean Speed Prediction by PK plot
             st.header("Predicció de Velocitat Mitjana per PK")
-            print("🐛 DEBUG: Creating Mean Speed plot")
+            print("🐛 DEBUG: Creating Mean Speed plot with real vs predicted values")
             
             fig3 = go.Figure()
+            
+            # Add predicted values
             fig3.add_trace(go.Scatter(
                 x=filtered_data['pk'],
                 y=filtered_data['mean_speed_pred'],
                 mode='lines+markers',
                 name='Velocitat Mitjana Predita',
-                line=dict(color='blue', width=2),
-                marker=dict(size=4)
+                line=dict(color='blue', width=3),
+                marker=dict(size=6)
             ))
             
+            # Add real values if available
+            if len(real_data) > 0:
+                fig3.add_trace(go.Scatter(
+                    x=real_data['pk'],
+                    y=real_data['mean_speed_real'],
+                    mode='lines+markers',
+                    name='Velocitat Mitjana Real',
+                    line=dict(color='lightblue', width=2, dash='dot'),
+                    marker=dict(size=4),
+                    opacity=0.7
+                ))
+            
             fig3.update_layout(
-                title=f'Predicció de Velocitat Mitjana per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
+                title=f'Predicció de Velocitat mitjana per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
                 xaxis_title='PK (Punt Quilomètric)',
-                yaxis_title='Velocitat mitjana Predita (km/h)',
+                yaxis_title='Velocitat mitjana (km/h)',
                 hovermode='x unified',
-                height=500
+                height=500,
+                legend=dict(x=0.02, y=0.98)
             )
             
             print("🐛 DEBUG: Displaying Mean Speed plot")
             st.plotly_chart(fig3, use_container_width=True)
             print("🐛 DEBUG: Mean Speed plot displayed successfully")
-                
-        else:
-            print("🐛 DEBUG: No data found for selected filters")
-            st.warning("⚠️ No s'han trobat dades per als filtres seleccionats. Proveu amb valors diferents.")
+            
+            # Display data availability info
+            if len(real_data) > 0:
+                st.info(f"📊 Dades reals disponibles per {len(real_data)} de {len(filtered_data)} punts quilomètrics.")
+            else:
+                st.warning("⚠️ No hi ha dades reals disponibles per als filtres seleccionats.")
         
         # Close connection
         con.close()
