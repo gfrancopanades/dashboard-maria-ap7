@@ -56,21 +56,21 @@ if os.path.exists(db_path):
         print(f"🐛 DEBUG: Selected year: {selected_year}")
         
         selected_month = st.sidebar.selectbox(
-            "Selecciona Mes (mes)",
+            "Selecciona Mes",
             options=unique_months,
             index=0
         )
         print(f"🐛 DEBUG: Selected month: {selected_month}")
         
         selected_day = st.sidebar.selectbox(
-            "Selecciona Dia (dia)",
+            "Selecciona Dia",
             options=unique_days,
             index=0
         )
         print(f"🐛 DEBUG: Selected day: {selected_day}")
         
         selected_hour = st.sidebar.selectbox(
-            "Selecciona Hora (hor)",
+            "Selecciona Hora",
             options=unique_hours,
             index=0
         )
