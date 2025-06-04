@@ -110,7 +110,7 @@ if os.path.exists(db_path):
         
         if len(filtered_data) > 0:
             # HWV Intensity Prediction by PK plot
-            st.header("Predicció d'Intensitat de Vehicles Pesats per PK")
+            st.header("Predicció Intensitat de Vehicles Pesats per PK")
             print("🐛 DEBUG: Creating HWV Intensity plot")
             
             fig1 = go.Figure()
@@ -124,7 +124,7 @@ if os.path.exists(db_path):
             ))
             
             fig1.update_layout(
-                title=f'Predicció d\'Intensitat de Vehicles Pesats per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
+                title=f'Predicció Intensitat de Vehicles Pesats per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
                 xaxis_title='PK (Punt Quilomètric)',
                 yaxis_title='Intensitat de Vehicles Pesats Predita',
                 hovermode='x unified',
@@ -136,7 +136,7 @@ if os.path.exists(db_path):
             print("🐛 DEBUG: HWV Intensity plot displayed successfully")
             
             # Total Intensity Prediction by PK plot
-            st.header("Predicció d'Intensitat Total per PK")
+            st.header("Predicció Intensitat Total per PK")
             print("🐛 DEBUG: Creating Total Intensity plot")
             
             fig2 = go.Figure()
@@ -150,7 +150,7 @@ if os.path.exists(db_path):
             ))
             
             fig2.update_layout(
-                title=f'Predicció d\'Intensitat Total per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
+                title=f'Predicció Intensitat Total per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
                 xaxis_title='PK (Punt Quilomètric)',
                 yaxis_title='Intensitat Total Predita',
                 hovermode='x unified',
