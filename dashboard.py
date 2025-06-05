@@ -119,7 +119,49 @@ if os.path.exists(db_path):
             print(f"🐛 DEBUG: Real data availability: {filtered_data['intP_real'].notna().sum()} of {len(filtered_data)} records")
         
         if len(filtered_data) > 0:
-            # HWV Intensity Prediction by PK plot
+            # Mean Speed Prediction by PK plot (moved to first position)
+            st.header("Predicció de Velocitat Mitjana per PK")
+            print("🐛 DEBUG: Creating Mean Speed plot with real vs predicted values")
+            
+            fig3 = go.Figure()
+            
+            # Add predicted values
+            fig3.add_trace(go.Scatter(
+                x=filtered_data['pk'],
+                y=filtered_data['mean_speed_pred'],
+                mode='lines+markers',
+                name='Velocitat Mitjana Predita',
+                line=dict(color='blue', width=3),
+                marker=dict(size=6)
+            ))
+            
+            # Add real values if available
+            real_data = filtered_data[filtered_data['intP_real'].notna()]
+            if len(real_data) > 0:
+                fig3.add_trace(go.Scatter(
+                    x=real_data['pk'],
+                    y=real_data['mean_speed_real'],
+                    mode='lines+markers',
+                    name='Velocitat Mitjana Real',
+                    line=dict(color='lightblue', width=2, dash='dot'),
+                    marker=dict(size=4),
+                    opacity=0.7
+                ))
+            
+            fig3.update_layout(
+                title=f'Predicció de Velocitat Mitjana per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
+                xaxis_title='PK (Punt Quilomètric)',
+                yaxis_title='Velocitat mitjana (km/h)',
+                hovermode='x unified',
+                height=500,
+                legend=dict(x=0.02, y=0.98)
+            )
+            
+            print("🐛 DEBUG: Displaying Mean Speed plot")
+            st.plotly_chart(fig3, use_container_width=True)
+            print("🐛 DEBUG: Mean Speed plot displayed successfully")
+            
+            # HWV Intensity Prediction by PK plot (moved to second position)
             st.header("Predicció Intensitat de Vehicles Pesats per PK")
             print("🐛 DEBUG: Creating HWV Intensity plot with real vs predicted values")
             
@@ -136,7 +178,6 @@ if os.path.exists(db_path):
             ))
             
             # Add real values if available
-            real_data = filtered_data[filtered_data['intP_real'].notna()]
             if len(real_data) > 0:
                 fig1.add_trace(go.Scatter(
                     x=real_data['pk'],
@@ -161,7 +202,7 @@ if os.path.exists(db_path):
             st.plotly_chart(fig1, use_container_width=True)
             print("🐛 DEBUG: HWV Intensity plot displayed successfully")
             
-            # Total Intensity Prediction by PK plot
+            # Total Intensity Prediction by PK plot (moved to third position)
             st.header("Predicció Intensitat Total per PK")
             print("🐛 DEBUG: Creating Total Intensity plot with real vs predicted values")
             
@@ -201,47 +242,6 @@ if os.path.exists(db_path):
             print("🐛 DEBUG: Displaying Total Intensity plot")
             st.plotly_chart(fig2, use_container_width=True)
             print("🐛 DEBUG: Total Intensity plot displayed successfully")
-            
-            # Mean Speed Prediction by PK plot
-            st.header("Predicció de Velocitat Mitjana per PK")
-            print("🐛 DEBUG: Creating Mean Speed plot with real vs predicted values")
-            
-            fig3 = go.Figure()
-            
-            # Add predicted values
-            fig3.add_trace(go.Scatter(
-                x=filtered_data['pk'],
-                y=filtered_data['mean_speed_pred'],
-                mode='lines+markers',
-                name='Velocitat Mitjana Predita',
-                line=dict(color='blue', width=3),
-                marker=dict(size=6)
-            ))
-            
-            # Add real values if available
-            if len(real_data) > 0:
-                fig3.add_trace(go.Scatter(
-                    x=real_data['pk'],
-                    y=real_data['mean_speed_real'],
-                    mode='lines+markers',
-                    name='Velocitat Mitjana Real',
-                    line=dict(color='lightblue', width=2, dash='dot'),
-                    marker=dict(size=4),
-                    opacity=0.7
-                ))
-            
-            fig3.update_layout(
-                title=f'Predicció de Velocitat mitjana per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
-                xaxis_title='PK (Punt Quilomètric)',
-                yaxis_title='Velocitat mitjana (km/h)',
-                hovermode='x unified',
-                height=500,
-                legend=dict(x=0.02, y=0.98)
-            )
-            
-            print("🐛 DEBUG: Displaying Mean Speed plot")
-            st.plotly_chart(fig3, use_container_width=True)
-            print("🐛 DEBUG: Mean Speed plot displayed successfully")
             
             # Display data availability info
             if len(real_data) > 0:
