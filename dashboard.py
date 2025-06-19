@@ -48,31 +48,37 @@ if os.path.exists(db_path):
         st.sidebar.header("📅 Filtres")
         print("🐛 DEBUG: Setting up sidebar filters")
         
+        # Set default filter values
+        default_year = 2023
+        default_month = 10
+        default_day = 6
+        default_hour = 8
+
         selected_year = st.sidebar.selectbox(
             "Selecciona Any",
             options=unique_years,
-            index=0
+            index=unique_years.index(default_year) if default_year in unique_years else 0
         )
         print(f"🐛 DEBUG: Selected year: {selected_year}")
         
         selected_month = st.sidebar.selectbox(
             "Selecciona Mes",
             options=unique_months,
-            index=0
+            index=unique_months.index(default_month) if default_month in unique_months else 0
         )
         print(f"🐛 DEBUG: Selected month: {selected_month}")
         
         selected_day = st.sidebar.selectbox(
             "Selecciona Dia",
             options=unique_days,
-            index=0
+            index=unique_days.index(default_day) if default_day in unique_days else 0
         )
         print(f"🐛 DEBUG: Selected day: {selected_day}")
         
         selected_hour = st.sidebar.selectbox(
             "Selecciona Hora",
             options=unique_hours,
-            index=0
+            index=unique_hours.index(default_hour) if default_hour in unique_hours else 0
         )
         print(f"🐛 DEBUG: Selected hour: {selected_hour}")
         
