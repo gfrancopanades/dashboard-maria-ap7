@@ -162,50 +162,9 @@ if os.path.exists(db_path):
                 height=500,
                 legend=dict(x=0.02, y=0.98)
             )
-            
-            print("🐛 DEBUG: Displaying Mean Speed plot")
-            st.plotly_chart(fig3, use_container_width=True)
-            print("🐛 DEBUG: Mean Speed plot displayed successfully")
-            
-            # HWV Intensity Prediction by PK plot (moved to second position)
-            st.header("Predicció Intensitat de Vehicles Pesats per PK")
-            print("🐛 DEBUG: Creating HWV Intensity plot with real vs predicted values")
-            
-            fig1 = go.Figure()
-            
-            # Add predicted values
-            fig1.add_trace(go.Scatter(
-                x=filtered_data['pk'],
-                y=filtered_data['intP_pred'],
-                mode='lines+markers',
-                name='Intensitat Vehicles Pesats Predita',
-                line=dict(color='purple', width=3),
-                marker=dict(size=6)
-            ))
-            
-            # Add real values if available
-            if len(real_data) > 0:
-                fig1.add_trace(go.Scatter(
-                    x=real_data['pk'],
-                    y=real_data['intP_real'],
-                    mode='lines+markers',
-                    name='Intensitat Vehicles Pesats Real',
-                    line=dict(color='mediumpurple', width=2, dash='dot'),
-                    marker=dict(size=4),
-                    opacity=0.7
-                ))
-            
-            fig1.update_layout(
-                title=f'Predicció Intensitat de Vehicles Pesats per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
-                xaxis_title='PK (Punt Quilomètric)',
-                yaxis_title='Intensitat de Vehicles Pesats',
-                hovermode='x unified',
-                height=500,
-                legend=dict(x=0.02, y=0.98)
-            )
-            
+
             print("🐛 DEBUG: Displaying HWV Intensity plot")
-            st.plotly_chart(fig1, use_container_width=True)
+            st.plotly_chart(fig3, use_container_width=True)
             print("🐛 DEBUG: HWV Intensity plot displayed successfully")
             
             # Total Intensity Prediction by PK plot (moved to third position)
@@ -223,37 +182,7 @@ if os.path.exists(db_path):
                 line=dict(color='orange', width=3),
                 marker=dict(size=6)
             ))
-            
-            # Add real values if available
-            if len(real_data) > 0:
-                fig2.add_trace(go.Scatter(
-                    x=real_data['pk'],
-                    y=real_data['intTot_real'],
-                    mode='lines+markers',
-                    name='Intensitat Total Real',
-                    line=dict(color='moccasin', width=2, dash='dot'),
-                    marker=dict(size=4),
-                    opacity=0.7
-                ))
-            
-            fig2.update_layout(
-                title=f'Predicció Intensitat Total per PK (Any: {selected_year}, Mes: {selected_month}, Dia: {selected_day}, Hora: {selected_hour}, Via: {selected_via})',
-                xaxis_title='PK (Punt Quilomètric)',
-                yaxis_title='Intensitat Total',
-                hovermode='x unified',
-                height=500,
-                legend=dict(x=0.02, y=0.98)
-            )
-            
-            print("🐛 DEBUG: Displaying Total Intensity plot")
             st.plotly_chart(fig2, use_container_width=True)
-            print("🐛 DEBUG: Total Intensity plot displayed successfully")
-            
-            # Display data availability info
-            if len(real_data) > 0:
-                st.info(f"📊 Dades reals disponibles per {len(real_data)} de {len(filtered_data)} punts quilomètrics.")
-            else:
-                st.warning("⚠️ No hi ha dades reals disponibles per als filtres seleccionats.")
         
         # Close connection
         con.close()
